@@ -43,6 +43,14 @@ A language-agnostic scanner that finds hardcoded UI text in your codebase and he
 🔍 Scan → 📋 Report → 💉 Inject keys → 🌍 Translate 20 locales → ✅ Safe patch
 ```
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
+> (Solana / USDC / any SPL token)
+
 ---
 
 ## Features
@@ -246,52 +254,11 @@ This scanner was built for the **[Subvox](https://github.com/Nansoouu/subvox)** 
 
 The scanner works with ANY Next.js project using next-intl. Just point `--project` at your frontend root.
 
-> **Support the author**
-> If this tool saves you time, send a donation to:
-> ```
-> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
-> ```
-> (Solana / USDC / any SPL token)
-
 ---
 
 ## License
 
 MIT — use it, modify it, share it. If you build something cool with it, we'd love to hear about it.
-
-### 1. Add detection for your language
-
-The `--universal` mode catches all scripts, but specific patterns improve accuracy. Add:
-
-- **Accented character sets** — Vietnamese (ăâđêôơư), Polish (łężźć), Romanian (ăâîșț), etc.
-- **Non-Latin stopwords** — Common Arabic, Hindi, Thai, Greek words that are UI text, not code
-- **CJK detection** — Chinese/Japanese/Korean character ranges (already included, but sub-language tuning helps)
-
-### 2. Framework adapters
-
-- Support `react-i18next` / `i18next` syntax (currently next-intl only)
-- Detect `formatMessage()`, `intl.formatMessage()`, `$t()` patterns
-- Add Vue.js / Svelte / Angular support
-
-### 3. Key naming improvements
-
-- Better namespace inference from directory structure
-- Multi-language key suggestions (not just from French)
-- Integration with existing translation management systems
-
-### 4. CI/CD integrations
-
-- GitHub Action to run scan on PRs
-- Fail CI if new hardcoded text is introduced
-- Auto-comment on PRs with scan results
-
-### 5. IDE plugins
-
-- VS Code extension to highlight hardcoded text inline
-- Suggested quick-fix to wrap in `t()` call
-- Locale file explorer
-
----
 
 ## Project structure
 
