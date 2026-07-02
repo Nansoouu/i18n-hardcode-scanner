@@ -64,6 +64,21 @@ A language-agnostic scanner that finds hardcoded UI text in your codebase and he
 
 ---
 
+## Project structure
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # The scanner (single file, self-contained)
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek batch translation script
+│   └── no-emoji-i18n.sh        # Pre-commit hook for emoji-free locale files
+├── readmes/                    # Translated READMEs
+├── pyproject.toml              # Python packaging (optional)
+├── LICENSE                     # MIT
+└── README.md                   # This file
+```
+
+
 ## Quick Start
 
 ```bash
@@ -259,17 +274,3 @@ The scanner works with ANY Next.js project using next-intl. Just point `--projec
 ## License
 
 MIT — use it, modify it, share it. If you build something cool with it, we'd love to hear about it.
-
-## Project structure
-
-```
-i18n-hardcode-scanner/
-├── i18n_hardcode_scanner.py    # The scanner (single file, self-contained)
-├── scripts/
-│   ├── sync-i18n.py            # DeepSeek batch translation script
-│   └── no-emoji-i18n.sh        # Pre-commit hook for emoji-free locale files
-├── readmes/                    # Translated READMEs
-├── pyproject.toml              # Python packaging (optional)
-├── LICENSE                     # MIT
-└── README.md                   # This file
-```
