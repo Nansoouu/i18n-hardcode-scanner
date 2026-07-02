@@ -82,13 +82,31 @@ i18n-hardcode-scanner/
 ## Quick Start
 
 ```bash
-# Clone and run
+# Clone and run (dry-run — no API key needed)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Scan your project (dry-run, no changes)
 python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --dry-run
 ```
+
+---
+
+## API key — DeepSeek (optional)
+
+The translation pipeline (`--auto`, `--translate`, `--update-stale`) uses DeepSeek to translate keys into 20 languages. You need an API key **only** for these features.
+
+```bash
+# 1. Get a key: https://platform.deepseek.com/api_keys
+# 2. Provide it via environment variable:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./my-app --translate
+
+# Or create ~/.hermes/auth.json (auto-detected):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Dry-run, inject, patch-safe, ci, check-stale** — none of these need an API key.
+
+---
 
 ---
 
