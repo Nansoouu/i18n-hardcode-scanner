@@ -35,29 +35,67 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Funkcje
 
-- **Wykrywanie niezależne od języka** — znajduje czytelny tekst w DOWOLNYM języku (francuski, angielski, wietnamski, arabski, CJK, cyrylica…)
+- **Wykrywanie niezależne od języka** — znajduje czytelny dla człowieka tekst w DOWOLNYM języku (francuski, angielski, wietnamski, arabski, CJK, cyrylica…)
 - **Tryb specyficzny dla francuskiego** — dostrojony do projektów francuskich, mniej fałszywych trafień
 - **Raport w formacie Markdown do udostępniania** — idealny do przeglądu zespołowego lub artefaktów CI
 - **Bezpieczne automatyczne łatanie** — dodaje `import { useTranslations }`, deklaruje `const t = useTranslations(...)`, zastępuje tekst JSX, weryfikuje składnię
 - **Potok tłumaczeniowy** — wstrzykuje klucze do `fr.json`, a następnie tłumaczy na wszystkie 20 lokalizacji przez DeepSeek
-- **Brak kroku budowania** — pojedynczy plik Pythona, zero zależności (stdlib + opcjonalny `httpx`)
+- **Brak etapu budowania** — pojedynczy plik Pythona, zero zależności (stdlib + opcjonalnie `httpx`)
 
 ---
+
+## Struktura projektu
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # Skaner (pojedynczy plik, samodzielny)
+├── scripts/
+│   ├── sync-i18n.py            # Skrypt do wsadowego tłumaczenia przez DeepSeek
+│   └── no-emoji-i18n.sh        # Hook pre-commit dla plików lokalizacyjnych bez emoji
+├── readmes/                    # Przetłumaczone pliki README
+├── pyproject.toml              # Pakowanie Pythona (opcjonalne)
+├── LICENSE                     # MIT
+└── README.md                   # Ten plik
+```
 
 ## Szybki start
 
 ```bash
-# Sklonuj i uruchom
+# Sklonuj i uruchom (symulacja — klucz API nie jest potrzebny)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Skanuj swój projekt (symulacja, bez zmian)
-python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --dry-run
+python3 i18n_hardcode_scanner.py --project /ścieżka/do/twojego/frontendu --universal --dry-run
 ```
+
+---
+
+## Klucz API — DeepSeek (opcjonalny)
+
+Potok tłumaczeniowy (`--auto`, `--translate`, `--update-stale`) używa DeepSeek do tłumaczenia kluczy na 20 języków. Potrzebujesz klucza API **tylko** dla tych funkcji.
+
+```bash
+# 1. Uzyskaj klucz: https://platform.deepseek.com/api_keys
+# 2. Podaj go przez zmienną środowiskową:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --translate
+
+# Lub utwórz ~/.hermes/auth.json (automatycznie wykrywany):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Symulacja, wstrzykiwanie, bezpieczne łatanie, CI, sprawdzanie nieaktualnych** — żadna z tych funkcji nie wymaga klucza API.
+
+---
 
 ---
 
@@ -67,10 +105,10 @@ python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --
 
 ```bash
 # Specyficzny dla francuskiego (bardziej precyzyjny, mniej wyników)
-python3 i18n_hardcode_scanner.py --project ./my-app --dry-run
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --dry-run
 
 # Wszystkie języki (wyczerpujący, wykrywa wszystko)
-python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --universal --dry-run
 ```
 
 ### Raport
@@ -83,27 +121,27 @@ python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
 ### Wstrzykiwanie i tłumaczenie
 
 ```bash
-# Wstrzyknij odkryte klucze do fr.json
-python3 i18n_hardcode_scanner.py --project ./my-app --inject
+# Wstrzykuje znalezione klucze do fr.json
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --inject
 
-# Tłumacz na wszystkie 20 lokalizacji przez DeepSeek
-python3 i18n_hardcode_scanner.py --project ./my-app --translate
+# Tłumaczy na wszystkie 20 lokalizacji przez DeepSeek
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --translate
 
-# Pełny potok: wstrzyknij + tłumacz
-python3 i18n_hardcode_scanner.py --project ./my-app --auto
+# Pełny potok: wstrzykiwanie + tłumaczenie
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --auto
 ```
 
 ### Bezpieczne łatanie
 
 ```bash
 # Symulacja (pokazuje różnice, nic nie zapisuje)
-python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe --dry-run
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --patch-safe --dry-run
 
-# Zastosuj (dodaje importy, t(), zastępuje tekst JSX, weryfikuje składnię)
-python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe
+# Zastosowanie (dodaje importy, t(), zastępuje tekst JSX, weryfikuje składnię)
+python3 i18n_hardcode_scanner.py --project ./moja-aplikacja --patch-safe
 ```
 
-Tylko węzły tekstowe JSX (`>text<`) są automatycznie zastępowane. Tablice danych i ciągi znaków w atrybutach są oznaczane do ręcznego przeglądu.
+Tylko węzły tekstowe JSX (`>text<`) są automatycznie zastępowane. Tablice danych i atrybuty tekstowe są oznaczane do ręcznego przeglądu.
 
 ---
 
@@ -118,8 +156,8 @@ Skaner **nie** używa słowników specyficznych dla języka. Zamiast tego szuka 
 | Akcentowane znaki łacińskie | `é`, `ñ`, `ü` | Francuski, hiszpański, niemiecki, wietnamski… |
 | Skrypty niełacińskie | 你好, Привет, العربية | CJK, cyrylica, arabski… |
 | Wyrażenia wielowyrazowe | `"Przesyłanie pliku..."` | Dowolny język ze spacjami |
-| Interpunkcja zdaniowa | `"Gotowe!"`, `"Kontynuować?"` | Kończy się na `.`, `!`, `?`, `:` |
-| Wyrazy z dużej litery | `"Panel"`, `"Paramètres"` | Nazwy własne, tytuły sekcji |
+| Interpunkcja zdań | `"Gotowe!"`, `"Kontynuować?"` | Kończy się na `.`, `!`, `?`, `:` |
+| Wyrazy pisane wielką literą | `"Panel"`, `"Paramètres"` | Nazwy własne, tytuły sekcji |
 | Emoji w tekście | `"✅ Skopiowano"` | Mieszane emoji + tekst |
 
 ### Co pomija
@@ -138,18 +176,18 @@ Skaner **nie** używa słowników specyficznych dla języka. Zamiast tego szuka 
 ```
 Linia po linii → 
   ① Czy to węzeł tekstowy JSX (>text<)? 
-     → Sprawdź, czy wygląda na czytelny → Oznacz jako JSX
+     → Sprawdź, czy wygląda na czytelny dla człowieka → Oznacz jako JSX
   ② Czy jest cytowany ciąg znaków ("..." lub '...')? 
      → Czy to identyfikator JS? → Pomiń
-     → Czy to techniczne? → Pomiń
-     → Czy to czytelne? → Oznacz jako STRING
+     → Czy to techniczny? → Pomiń
+     → Czy jest czytelny dla człowieka? → Oznacz jako STRING
 ```
 
 ---
 
 ## Konwencje nazewnictwa kluczy
 
-Skaner automatycznie generuje klucze w camelCase z tekstu francuskiego/angielskiego:
+Skaner automatycznie generuje klucze w formacie camelCase z tekstu francuskiego/angielskiego:
 
 | Oryginalny tekst | Wygenerowany klucz |
 |------------------|--------------------|
@@ -169,51 +207,18 @@ Każde automatyczne łatanie przechodzi przez następujące kontrole:
 1. **Dodanie importu** — `import { useTranslations } from "next-intl"` jeśli brakuje
 2. **Dodanie deklaracji** — `const t = useTranslations("Namespace")` po importach
 3. **Zbalansowanie nawiasów** — `{}[]()` weryfikuje brak uszkodzonego JSX
-4. **Wykrycie t() wewnątrz ciągów znaków** — `placeholder="{t("key")}"` byłoby renderowane jako dosłowny tekst
+4. **Wykrycie t() wewnątrz ciągów** — `placeholder="{t("key")}"` byłoby renderowane jako dosłowny tekst
 5. **Zapis jest atomowy** — plik jest zapisywany tylko wtedy, gdy wszystkie kontrole przejdą
 
 ---
 
-## Poszukiwane wkłady społeczności
+## Oczekiwane wkłady społeczności
 
-To narzędzie staje się lepsze z większą liczbą wzorców wykrywania języków. Oto kilka sposobów na pomoc:
+To narzędzie jest **open source i sterowane społecznością**. Forkuj je, ulepszaj, udostępniaj.
+Każdy wkład — czy to nowy wzorzec językowy, adapter frameworka, czy poprawka błędu — pomaga uczynić sieć bardziej dostępną.
+
+Szczególnie mile widziane są PR od programistów mówiących językami, które są obecnie niedostatecznie reprezentowane w narzędziach i18n.
 
 ### 1. Dodaj wykrywanie dla swojego języka
 
-Tryb `--universal` wykrywa wszystkie skrypty, ale specyficzne wzorce poprawiają dokładność. Dodaj:
-
-- **Zestawy akcentowanych znaków** — wietnamski (ăâđêôơư), polski (łężźć), rumuński (ăâîșț) itp.
-- **Niełacińskie słowa stop** — popularne arabskie, hindi, tajskie, greckie słowa będące tekstem UI, a nie kodem
-- **Wykrywanie CJK** — zakresy znaków chińskich/japońskich/koreańskich (już zawarte, ale dostrojenie podjęzykowe pomaga)
-
-### 2. Adaptery frameworków
-
-- Obsługa składni `react-i18next` / `i18next` (obecnie tylko next-intl)
-- Wykrywanie wzorców `formatMessage()`, `intl.formatMessage()`, `$t()`
-- Dodanie obsługi Vue.js / Svelte / Angular
-
-### 3. Ulepszenia nazewnictwa kluczy
-
-- Lepsze wnioskowanie przestrzeni nazw na podstawie struktury katalogów
-- Sugestie kluczy wielojęzycznych (nie tylko z francuskiego)
-- Integracja z istniejącymi systemami zarządzania tłumaczeniami
-
-### 4. Integracje CI/CD
-
-- Akcja GitHub do uruchamiania skanowania na PR
-- Niepowodzenie CI w przypadku wprowadzenia nowego zakodowanego tekstu
-- Automatyczne komentowanie PR z wynikami skanowania
-
-### 5. Wtyczki IDE
-
-- Rozszerzenie VS Code do podświetlania zakodowanego tekstu w linii
-- Sugerowana szybka naprawa do zawinięcia w wywołanie `t()`
-- Przeglądarka plików lokalizacji
-
----
-
-## Zbuduj dla swojego projektu
-
-Ten skaner został zbudowany dla projektu **[Subvox](https://github.com/Nansoouu/subvox)** — otwartoźródłowej platformy napisów wideo obsługującej 150+ języków napisów i 20 języków interfejsu.
-
-Skaner działa z DOWOLNYM projektem Next.js używającym next-intl. Wystarczy wskazać `
+Tryb `--universal` wykrywa wszystkie skrypty, ale konkretne wzorce...

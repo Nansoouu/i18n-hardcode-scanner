@@ -35,6 +35,12 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 A language-agnostic scanner that finds hardcoded UI text in your codebase and helps you wire it through next-intl translation keys. Built for and battle-tested on **[Subvox](https://github.com/Nansoouu/subvox)** — the open-source video subtitle platform.
@@ -42,12 +48,6 @@ A language-agnostic scanner that finds hardcoded UI text in your codebase and he
 ```
 🔍 Scan → 📋 Report → 💉 Inject keys → 🌍 Translate 20 locales → ✅ Safe patch
 ```
-
-> **Support the author** — if this tool saves you time, send a donation to:
-
-> ```
-> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
-> ```
 
 > (Solana / USDC / any SPL token)
 

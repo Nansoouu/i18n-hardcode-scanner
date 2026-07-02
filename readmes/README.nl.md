@@ -35,29 +35,67 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Functies
 
 - **Taalonafhankelijke detectie** — vindt leesbare tekst in ELKE taal (Frans, Engels, Vietnamees, Arabisch, CJK, Cyrillisch…)
-- **Frans-specifieke modus** — afgestemd op Franse projecten, minder valse positieven
-- **Deelbaar markdown-rapport** — perfect voor teamreview of CI-artefacten
+- **Frans-specifieke modus** — afgestemd op Franse projecten, minder fout-positieven
+- **Deelbaar markdown-rapport** — perfect voor teambeoordeling of CI-artefacten
 - **Veilige automatische patching** — voegt `import { useTranslations }` toe, declareert `const t = useTranslations(...)`, vervangt JSX-tekst, verifieert syntax
 - **Vertalingspijplijn** — injecteert sleutels in `fr.json`, vertaalt vervolgens naar alle 20 talen via DeepSeek
-- **Geen buildstap** — enkel Python-bestand, nul afhankelijkheden (stdlib + optioneel `httpx`)
+- **Geen build-stap** — enkel Python-bestand, nul afhankelijkheden (stdlib + optioneel `httpx`)
 
 ---
+
+## Projectstructuur
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # De scanner (enkel bestand, zelfstandig)
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek batch-vertalingsscript
+│   └── no-emoji-i18n.sh        # Pre-commit hook voor emoji-vrije taalbestanden
+├── readmes/                    # Vertaalde README's
+├── pyproject.toml              # Python-verpakking (optioneel)
+├── LICENSE                     # MIT
+└── README.md                   # Dit bestand
+```
 
 ## Snel starten
 
 ```bash
-# Kloon en voer uit
+# Kloon en voer uit (droge run — geen API-sleutel nodig)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Scan je project (proefdraai, geen wijzigingen)
 python3 i18n_hardcode_scanner.py --project /pad/naar/jouw/frontend --universal --dry-run
 ```
+
+---
+
+## API-sleutel — DeepSeek (optioneel)
+
+De vertalingspijplijn (`--auto`, `--translate`, `--update-stale`) gebruikt DeepSeek om sleutels naar 20 talen te vertalen. Je hebt een API-sleutel **alleen** nodig voor deze functies.
+
+```bash
+# 1. Haal een sleutel: https://platform.deepseek.com/api_keys
+# 2. Geef deze door via omgevingsvariabele:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./mijn-app --translate
+
+# Of maak ~/.hermes/auth.json aan (automatisch gedetecteerd):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Droge run, injecteer, patch-veilig, ci, check-stale** — geen van deze heeft een API-sleutel nodig.
+
+---
 
 ---
 
@@ -77,10 +115,10 @@ python3 i18n_hardcode_scanner.py --project ./mijn-app --universal --dry-run
 
 ```bash
 # Genereert scripts/i18n-reports/hardcode-scan-{timestamp}.md
-# + scripts/i18n-replacements.sh met per-bestand patchkandidaten
+# + scripts/i18n-replacements.sh met per-bestand patch-kandidaten
 ```
 
-### Injecteren & vertalen
+### Injecteer & vertaal
 
 ```bash
 # Injecteer gevonden sleutels in fr.json
@@ -89,21 +127,21 @@ python3 i18n_hardcode_scanner.py --project ./mijn-app --inject
 # Vertaal naar alle 20 talen via DeepSeek
 python3 i18n_hardcode_scanner.py --project ./mijn-app --translate
 
-# Volledige pijplijn: injecteren + vertalen
+# Volledige pijplijn: injecteer + vertaal
 python3 i18n_hardcode_scanner.py --project ./mijn-app --auto
 ```
 
 ### Veilig patchen
 
 ```bash
-# Proefdraai (toont verschillen, schrijft niets)
+# Droge run (toont verschillen, schrijft niets)
 python3 i18n_hardcode_scanner.py --project ./mijn-app --patch-safe --dry-run
 
 # Toepassen (voegt imports, t() toe, vervangt JSX-tekst, verifieert syntax)
 python3 i18n_hardcode_scanner.py --project ./mijn-app --patch-safe
 ```
 
-Alleen JSX-tekstknooppunten (`>tekst<`) worden automatisch vervangen. Gegevensarrays en attribuutstrings worden gemarkeerd voor handmatige controle.
+Alleen JSX-tekstknooppunten (`>tekst<`) worden automatisch vervangen. Gegevensarrays en attribuutstrings worden gemarkeerd voor handmatige beoordeling.
 
 ---
 
@@ -111,15 +149,15 @@ Alleen JSX-tekstknooppunten (`>tekst<`) worden automatisch vervangen. Gegevensar
 
 De scanner gebruikt **geen** taalspecifieke woordenboeken. In plaats daarvan zoekt het naar **technische patronen** die UI-tekst onderscheiden van code:
 
-### Wat het vangt
+### Wat het opvangt
 
 | Patroon | Voorbeeld | Detecteert |
 |---------|-----------|------------|
-| Accenttekens Latijnse karakters | `é`, `ñ`, `ü` | Frans, Spaans, Duits, Vietnamees… |
+| Accent-Latijnse tekens | `é`, `ñ`, `ü` | Frans, Spaans, Duits, Vietnamees… |
 | Niet-Latijnse schriften | 你好, Привет, العربية | CJK, Cyrillisch, Arabisch… |
 | Meerwoordige zinnen | `"Bestand uploaden..."` | Elke taal met spaties |
 | Zinsleestekens | `"Klaar!"`, `"Doorgaan?"` | Eindigt met `.`, `!`, `?`, `:` |
-| Titelwoordhoofdletters | `"Dashboard"`, `"Paramètres"` | Eigennamen, sectietitels |
+| Titel-hoofdletterwoorden | `"Dashboard"`, `"Paramètres"` | Eigennamen, sectietitels |
 | Emoji in tekst | `"✅ Gekopieerd"` | Gemengde emoji + tekst |
 
 ### Wat het overslaat
@@ -128,8 +166,8 @@ De scanner gebruikt **geen** taalspecifieke woordenboeken. In plaats daarvan zoe
 |---------|-----------|-------|
 | camelCase / snake_case | `activeUsers`, `error_count` | JS-identifiers |
 | CSS / Tailwind-klassen | `py-3 px-4`, `text-gray-500` | Opmaak, geen UI-tekst |
-| URL's en bestandspaden | `https://...`, `./componenten/` | Imports, bronnen |
-| Codeverklaringen | `const t =`, `return null` | JS-code |
+| URL's en bestandspaden | `https://...`, `./components/` | Imports, bronnen |
+| Code-instructies | `const t =`, `return null` | JS-code |
 | ALL_CAPS-constanten | `API_URL`, `MAX_RETRIES` | Configuratie |
 | Pure getallen / hex | `#fff`, `42` | Technische waarden |
 
@@ -147,7 +185,7 @@ Regel voor regel →
 
 ---
 
-## Sleutelnaamconventies
+## Sleutelnaamgevingsconventies
 
 De scanner genereert automatisch camelCase-sleutels uit de Franse/Engelse tekst:
 
@@ -158,7 +196,7 @@ De scanner genereert automatisch camelCase-sleutels uit de Franse/Engelse tekst:
 | `"Wallet non connecté"` | `walletNonConnecte` |
 | `"Hello world"` | `helloWorld` |
 
-**Botsingen** krijgen een `_N`-achtervoegsel (`title_2`, `title_3`). Sleutels moeten na generatie worden gecontroleerd.
+**Botsingen** krijgen een `_N`-achtervoegsel (`title_2`, `title_3`). Sleutels moeten na generatie worden beoordeeld.
 
 ---
 
@@ -168,52 +206,19 @@ Elke automatische patch doorloopt deze controles:
 
 1. **Import toegevoegd** — `import { useTranslations } from "next-intl"` indien ontbrekend
 2. **Declaratie toegevoegd** — `const t = useTranslations("Namespace")` na imports
-3. **Accolades in balans** — `{}[]()` verifieert geen gebroken JSX
-4. **t() binnen strings gedetecteerd** — `placeholder="{t("sleutel")}"` zou als letterlijke tekst worden weergegeven
+3. **Accolades gebalanceerd** — `{}[]()` verifieert geen gebroken JSX
+4. **t() binnen strings gedetecteerd** — `placeholder="{t("key")}"` zou als letterlijke tekst worden weergegeven
 5. **Schrijven is atomair** — bestand wordt alleen geschreven als alle controles slagen
 
 ---
 
-## Communitybijdragen gewenst
+## Bijdragen van de community gewenst
 
-Dit hulpmiddel wordt beter met meer taaldetectiepatronen. Hier zijn enkele manieren om te helpen:
+Deze tool is **open source en community-gedreven**. Fork het, verbeter het, deel het.
+Elke bijdrage — of het nu een nieuw taalpatroon, een framework-adapter of een bugfix is — helpt het web toegankelijker te maken.
+
+We verwelkomen vooral PR's van ontwikkelaars die talen spreken die momenteel ondervertegenwoordigd zijn in i18n-tooling.
 
 ### 1. Voeg detectie toe voor jouw taal
 
-De `--universal`-modus vangt alle schriften, maar specifieke patronen verbeteren de nauwkeurigheid. Voeg toe:
-
-- **Accenttekensets** — Vietnamees (ăâđêôơư), Pools (łężźć), Roemeens (ăâîșț), enz.
-- **Niet-Latijnse stopwoorden** — Veelvoorkomende Arabische, Hindi, Thaise, Griekse woorden die UI-tekst zijn, geen code
-- **CJK-detectie** — Chinese/Japanse/Koreaanse karakterreeksen (al inbegrepen, maar subtaalafstemming helpt)
-
-### 2. Frameworkadapters
-
-- Ondersteuning voor `react-i18next` / `i18next`-syntax (momenteel alleen next-intl)
-- Detecteer `formatMessage()`, `intl.formatMessage()`, `$t()`-patronen
-- Voeg Vue.js / Svelte / Angular-ondersteuning toe
-
-### 3. Sleutelnaamverbeteringen
-
-- Betere namespace-afleiding uit directorystructuur
-- Meertalige sleutelsuggesties (niet alleen uit het Frans)
-- Integratie met bestaande vertaalbeheersystemen
-
-### 4. CI/CD-integraties
-
-- GitHub Action om scan op PR's uit te voeren
-- CI laten falen als nieuwe hardcoded tekst wordt geïntroduceerd
-- Automatisch commentaar op PR's met scanresultaten
-
-### 5. IDE-plugins
-
-- VS Code-extensie om hardcoded tekst inline te markeren
-- Voorgestelde snelle oplossing om in `t()`-aanroep te wrappen
-- Taalbestandsverkenner
-
----
-
-## Bouw voor jouw project
-
-Deze scanner is gebouwd voor het **[Subvox](https://github.com/Nansoouu/subvox)** -project — een open-source videobijschriftenplatform dat 150+ ondertiteltalen en 20 UI-talen ondersteunt.
-
-De scanner werkt met ELK Next.js-project dat next-intl gebruikt. Wijs gewoon `
+De `--universal`-modus vangt alle schriften, maar specifieke patt

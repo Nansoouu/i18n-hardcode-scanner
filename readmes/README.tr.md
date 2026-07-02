@@ -35,29 +35,67 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Özellikler
 
-- **Dilden bağımsız algılama** — HERHANGİ bir dildeki (Fransızca, İngilizce, Vietnamca, Arapça, Çince-Japonca-Korece, Kiril…) insan tarafından okunabilir metni bulur
-- **Fransızca özel modu** — Fransızca projeler için ayarlanmış, daha az yanlış pozitif
+- **Dil bağımsız algılama** — HERHANGİ bir dilde (Fransızca, İngilizce, Vietnamca, Arapça, Çince, Kiril…) insan tarafından okunabilir metin bulur
+- **Fransızca özel mod** — Fransızca projeler için ayarlanmış, daha az yanlış pozitif
 - **Paylaşılabilir markdown raporu** — ekip incelemesi veya CI yapıtları için mükemmel
 - **Güvenli otomatik yama** — `import { useTranslations }` ekler, `const t = useTranslations(...)` bildirir, JSX metnini değiştirir, sözdizimini doğrular
-- **Çeviri hattı** — anahtarları `fr.json` dosyasına enjekte eder, ardından DeepSeek aracılığıyla 20 yerel ayarın tamamına çevirir
-- **Derleme adımı yok** — tek bir Python dosyası, sıfır bağımlılık (stdlib + isteğe bağlı `httpx`)
+- **Çeviri hattı** — anahtarları `fr.json` dosyasına ekler, ardından DeepSeek aracılığıyla 20 yerel ayara çevirir
+- **Derleme adımı yok** — tek Python dosyası, sıfır bağımlılık (stdlib + isteğe bağlı `httpx`)
 
 ---
+
+## Proje yapısı
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # Tarayıcı (tek dosya, kendi kendine yeterli)
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek toplu çeviri betiği
+│   └── no-emoji-i18n.sh        # Emoji içermeyen yerel dosyalar için ön işleme kancası
+├── readmes/                    # Çevrilmiş README'ler
+├── pyproject.toml              # Python paketleme (isteğe bağlı)
+├── LICENSE                     # MIT
+└── README.md                   # Bu dosya
+```
 
 ## Hızlı Başlangıç
 
 ```bash
-# Kopyala ve çalıştır
+# Kopyala ve çalıştır (deneme modu — API anahtarı gerekmez)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Projenizi tarayın (kuru çalıştırma, değişiklik yok)
 python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --dry-run
 ```
+
+---
+
+## API anahtarı — DeepSeek (isteğe bağlı)
+
+Çeviri hattı (`--auto`, `--translate`, `--update-stale`) anahtarları 20 dile çevirmek için DeepSeek kullanır. Bu özellikler için **yalnızca** bir API anahtarına ihtiyacınız vardır.
+
+```bash
+# 1. Anahtar al: https://platform.deepseek.com/api_keys
+# 2. Ortam değişkeni aracılığıyla sağla:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./my-app --translate
+
+# Veya ~/.hermes/auth.json oluştur (otomatik algılanır):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Deneme modu, ekleme, güvenli yama, ci, güncel olmayanları kontrol** — bunların hiçbiri API anahtarı gerektirmez.
+
+---
 
 ---
 
@@ -76,34 +114,34 @@ python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
 ### Rapor
 
 ```bash
-# scripts/i18n-reports/hardcode-scan-{timestamp}.md dosyasını oluşturur
-# + dosya başına yama adaylarıyla birlikte scripts/i18n-replacements.sh dosyasını oluşturur
+# scripts/i18n-reports/hardcode-scan-{timestamp}.md oluşturur
+# + dosya başına yama adaylarıyla scripts/i18n-replacements.sh
 ```
 
-### Enjekte et ve çevir
+### Ekle ve çevir
 
 ```bash
-# Bulunan anahtarları fr.json dosyasına enjekte et
+# Bulunan anahtarları fr.json dosyasına ekle
 python3 i18n_hardcode_scanner.py --project ./my-app --inject
 
-# DeepSeek aracılığıyla 20 yerel ayarın tamamına çevir
+# DeepSeek aracılığıyla 20 yerel ayara çevir
 python3 i18n_hardcode_scanner.py --project ./my-app --translate
 
-# Tam hat: enjekte et + çevir
+# Tam hat: ekle + çevir
 python3 i18n_hardcode_scanner.py --project ./my-app --auto
 ```
 
 ### Güvenli yama
 
 ```bash
-# Kuru çalıştırma (farkları gösterir, hiçbir şey yazmaz)
+# Deneme modu (farkları gösterir, hiçbir şey yazmaz)
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe --dry-run
 
-# Uygula (içe aktarmaları, t() fonksiyonunu ekler, JSX metnini değiştirir, sözdizimini doğrular)
+# Uygula (import'ları, t()'yi ekler, JSX metnini değiştirir, sözdizimini doğrular)
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe
 ```
 
-Yalnızca JSX metin düğümleri (`>metin<`) otomatik olarak değiştirilir. Veri dizileri ve öznitelik dizeleri manuel inceleme için işaretlenir.
+Yalnızca JSX metin düğümleri (`>text<`) otomatik olarak değiştirilir. Veri dizileri ve öznitelik dizeleri manuel inceleme için işaretlenir.
 
 ---
 
@@ -116,11 +154,11 @@ Tarayıcı, dile özgü sözlükler **kullanmaz**. Bunun yerine, UI metnini kodd
 | Kalıp | Örnek | Algılar |
 |---------|---------|---------|
 | Aksanlı Latin karakterler | `é`, `ñ`, `ü` | Fransızca, İspanyolca, Almanca, Vietnamca… |
-| Latin olmayan yazılar | 你好, Привет, العربية | Çince-Japonca-Korece, Kiril, Arapça… |
+| Latin olmayan yazılar | 你好, Привет, العربية | Çince, Kiril, Arapça… |
 | Çok kelimeli ifadeler | `"Dosya yükleniyor..."` | Boşluklu herhangi bir dil |
 | Cümle noktalama işaretleri | `"Bitti!"`, `"Devam et?"` | `.`, `!`, `?`, `:` ile biter |
 | Başlık büyük harfli kelimeler | `"Kontrol Paneli"`, `"Paramètres"` | Özel isimler, bölüm başlıkları |
-| Metin içinde emoji | `"✅ Kopyalandı"` | Karışık emoji + metin |
+| Metinde emoji | `"✅ Kopyalandı"` | Karışık emoji + metin |
 
 ### Neyi atlar
 
@@ -131,17 +169,17 @@ Tarayıcı, dile özgü sözlükler **kullanmaz**. Bunun yerine, UI metnini kodd
 | URL'ler ve dosya yolları | `https://...`, `./components/` | İçe aktarmalar, kaynaklar |
 | Kod ifadeleri | `const t =`, `return null` | JS kodu |
 | TAMAMI_BÜYÜK_HARF sabitleri | `API_URL`, `MAX_RETRIES` | Yapılandırma |
-| Saf sayılar / onaltılık | `#fff`, `42` | Teknik değerler |
+| Saf sayılar / hex | `#fff`, `42` | Teknik değerler |
 
 ### Dosya başına algılama hattı
 
 ```
 Satır satır → 
   ① Bu bir JSX metin düğümü mü (>metin<)? 
-     → İnsan tarafından okunabilir görünüyor mu diye kontrol et → JSX olarak işaretle
+     → İnsan tarafından okunabilir görünüyor mu? → JSX olarak işaretle
   ② Tırnak içinde bir dize var mı ("..." veya '...')? 
-     → Bir JS tanımlayıcısı mı? → Atla
-     → Teknik mi? → Atla
+     → Bu bir JS tanımlayıcısı mı? → Geç
+     → Teknik mi? → Geç
      → İnsan tarafından okunabilir mi? → STRING olarak işaretle
 ```
 
@@ -158,7 +196,7 @@ Tarayıcı, Fransızca/İngilizce metinden otomatik olarak camelCase anahtarlar 
 | `"Wallet non connecté"` | `walletNonConnecte` |
 | `"Hello world"` | `helloWorld` |
 
-**Çakışmalar** bir `_N` son eki alır (`title_2`, `title_3`). Anahtarlar oluşturulduktan sonra gözden geçirilmelidir.
+**Çakışmalar** `_N` son eki alır (`title_2`, `title_3`). Anahtarlar oluşturulduktan sonra gözden geçirilmelidir.
 
 ---
 
@@ -166,54 +204,21 @@ Tarayıcı, Fransızca/İngilizce metinden otomatik olarak camelCase anahtarlar 
 
 Her otomatik yama şu kontrollerden geçer:
 
-1. **İçe aktarma eklendi** — eksikse `import { useTranslations } from "next-intl"` eklenir
-2. **Bildirim eklendi** — içe aktarmalardan sonra `const t = useTranslations("Namespace")` eklenir
-3. **Köşeli parantezler dengeli** — `{}[]()` ile JSX'in bozulmadığı doğrulanır
-4. **Dizeler içindeki t() algılandı** — `placeholder="{t("key")}"` gerçek metin olarak işlenir
-5. **Yazma atomiktir** — dosya yalnızca tüm kontroller geçilirse yazılır
+1. **İçe aktarma eklendi** — eksikse `import { useTranslations } from "next-intl"`
+2. **Bildirim eklendi** — içe aktarmalardan sonra `const t = useTranslations("Namespace")`
+3. **Parantezler dengeli** — `{}[]()` kırık JSX olmadığını doğrular
+4. **Dizeler içinde t() algılandı** — `placeholder="{t("key")}"` değişmez metin olarak işlenir
+5. **Yazma atomiktir** — dosya yalnızca tüm kontroller geçerse yazılır
 
 ---
 
 ## Topluluk katkıları aranıyor
 
-Bu araç, daha fazla dil algılama kalıbıyla daha iyi hale gelir. İşte yardımcı olmanın bazı yolları:
+Bu araç **açık kaynaklı ve topluluk odaklıdır**. Çatallayın, geliştirin, paylaşın.
+Her katkı — ister yeni bir dil kalıbı, ister bir çerçeve bağdaştırıcısı veya bir hata düzeltmesi olsun — web'i daha erişilebilir kılmaya yardımcı olur.
+
+Özellikle i18n araçlarında yeterince temsil edilmeyen dilleri konuşan geliştiricilerden gelen PR'ları memnuniyetle karşılıyoruz.
 
 ### 1. Diliniz için algılama ekleyin
 
-`--universal` modu tüm yazıları yakalar, ancak belirli kalıplar doğruluğu artırır. Şunları ekleyin:
-
-- **Aksanlı karakter kümeleri** — Vietnamca (ăâđêôơư), Lehçe (łężźć), Rumence (ăâîșț) vb.
-- **Latin olmayan durdurma kelimeleri** — Kod değil, UI metni olan yaygın Arapça, Hintçe, Tayca, Yunanca kelimeler
-- **Çince-Japonca-Korece algılama** — Çince/Japonca/Korece karakter aralıkları (zaten dahil, ancak alt dil ayarlaması yardımcı olur)
-
-### 2. Çerçeve bağdaştırıcıları
-
-- `react-i18next` / `i18next` sözdizimi desteği (şu anda yalnızca next-intl)
-- `formatMessage()`, `intl.formatMessage()`, `$t()` kalıplarını algılama
-- Vue.js / Svelte / Angular desteği ekleme
-
-### 3. Anahtar adlandırma iyileştirmeleri
-
-- Dizin yapısından daha iyi ad alanı çıkarımı
-- Çok dilli anahtar önerileri (yalnızca Fransızcadan değil)
-- Mevcut çeviri yönetim sistemleriyle entegrasyon
-
-### 4. CI/CD entegrasyonları
-
-- PR'lerde tarama çalıştırmak için GitHub Eylemi
-- Yeni sabit kodlanmış metin eklenirse CI'yi başarısız kılma
-- Tarama sonuçlarıyla PR'lara otomatik yorum yapma
-
-### 5. IDE eklentileri
-
-- Sabit kodlanmış metni satır içinde vurgulamak için VS Code uzantısı
-- `t()` çağrısına sarmak için önerilen hızlı düzeltme
-- Yerel ayar dosyası gezgini
-
----
-
-## Projeniz için oluşturun
-
-Bu tarayıcı, **[Subvox](https://github.com/Nansoouu/subvox)** projesi için oluşturulmuştur — 150'den fazla altyazı dili ve 20 UI dilini destekleyen açık kaynaklı bir video altyazı platformu.
-
-Tarayıcı, next-intl kullanan HERHANGİ bir Next.js projesiyle çalışır. Sadece işaret edin
+`--universal` modu tüm yazıları yakalar, ancak belirli kalıplar

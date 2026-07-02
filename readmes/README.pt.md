@@ -35,35 +35,73 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
-## Funcionalidades
+## Features
 
 - **Detecção independente de idioma** — encontra texto legível em QUALQUER idioma (francês, inglês, vietnamita, árabe, CJK, cirílico…)
 - **Modo específico para francês** — ajustado para projetos franceses, menos falsos positivos
 - **Relatório markdown compartilhável** — perfeito para revisão em equipe ou artefatos de CI
-- **Correção automática segura** — adiciona `import { useTranslations }`, declara `const t = useTranslations(...)`, substitui texto JSX, verifica sintaxe
-- **Pipeline de tradução** — injeta chaves em `fr.json`, depois traduz para todos os 20 locais via DeepSeek
+- **Autopatch seguro** — adiciona `import { useTranslations }`, declara `const t = useTranslations(...)`, substitui texto JSX, verifica sintaxe
+- **Pipeline de tradução** — injeta chaves em `fr.json`, depois traduz para todos os 20 locales via DeepSeek
 - **Sem etapa de build** — arquivo Python único, zero dependências (stdlib + `httpx` opcional)
 
 ---
 
-## Início Rápido
+## Estrutura do projeto
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # O scanner (arquivo único, autocontido)
+├── scripts/
+│   ├── sync-i18n.py            # Script de tradução em lote DeepSeek
+│   └── no-emoji-i18n.sh        # Hook pre-commit para arquivos de locale sem emoji
+├── readmes/                    # READMEs traduzidos
+├── pyproject.toml              # Empacotamento Python (opcional)
+├── LICENSE                     # MIT
+└── README.md                   # Este arquivo
+```
+
+## Início rápido
 
 ```bash
-# Clone e execute
+# Clone e execute (simulação — nenhuma chave de API necessária)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Escaneie seu projeto (simulação, sem alterações)
 python3 i18n_hardcode_scanner.py --project /caminho/para/seu/frontend --universal --dry-run
 ```
 
 ---
 
+## Chave de API — DeepSeek (opcional)
+
+O pipeline de tradução (`--auto`, `--translate`, `--update-stale`) usa DeepSeek para traduzir chaves para 20 idiomas. Você precisa de uma chave de API **apenas** para esses recursos.
+
+```bash
+# 1. Obtenha uma chave: https://platform.deepseek.com/api_keys
+# 2. Forneça via variável de ambiente:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./meu-app --translate
+
+# Ou crie ~/.hermes/auth.json (detectado automaticamente):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Simulação, injetar, patch-safe, ci, check-stale** — nenhum deles precisa de chave de API.
+
+---
+
+---
+
 ## Uso
 
-### Modos de escaneamento
+### Modos de varredura
 
 ```bash
 # Específico para francês (mais preciso, menos resultados)
@@ -86,17 +124,17 @@ python3 i18n_hardcode_scanner.py --project ./meu-app --universal --dry-run
 # Injeta chaves descobertas em fr.json
 python3 i18n_hardcode_scanner.py --project ./meu-app --inject
 
-# Traduz para todos os 20 locais via DeepSeek
+# Traduz para todos os 20 locales via DeepSeek
 python3 i18n_hardcode_scanner.py --project ./meu-app --translate
 
 # Pipeline completo: injetar + traduzir
 python3 i18n_hardcode_scanner.py --project ./meu-app --auto
 ```
 
-### Correção segura
+### Patch seguro
 
 ```bash
-# Simulação (mostra diferenças, não escreve nada)
+# Simulação (mostra diffs, não escreve nada)
 python3 i18n_hardcode_scanner.py --project ./meu-app --patch-safe --dry-run
 
 # Aplicar (adiciona imports, t(), substitui texto JSX, verifica sintaxe)
@@ -111,33 +149,33 @@ Apenas nós de texto JSX (`>texto<`) são substituídos automaticamente. Arrays 
 
 O scanner **não** usa dicionários específicos de idioma. Em vez disso, ele procura **padrões técnicos** que distinguem texto de UI de código:
 
-### O que ele captura
+### O que captura
 
 | Padrão | Exemplo | Detecta |
 |---------|---------|---------|
-| Caracteres latinos acentuados | `é`, `ñ`, `ü` | Francês, Espanhol, Alemão, Vietnamita… |
-| Scripts não latinos | 你好, Привет, العربية | CJK, Cirílico, Árabe… |
+| Caracteres latinos acentuados | `é`, `ñ`, `ü` | Francês, espanhol, alemão, vietnamita… |
+| Scripts não latinos | 你好, Привет, العربية | CJK, cirílico, árabe… |
 | Frases com várias palavras | `"Enviando arquivo..."` | Qualquer idioma com espaços |
 | Pontuação de frase | `"Pronto!"`, `"Continuar?"` | Termina com `.`, `!`, `?`, `:` |
-| Palavras em título | `"Painel"`, `"Configurações"` | Substantivos próprios, títulos de seção |
-| Emoji em texto | `"✅ Copiado"` | Emoji + texto misturados |
+| Palavras em título | `"Painel"`, `"Paramètres"` | Substantivos próprios, títulos de seção |
+| Emoji em texto | `"✅ Copiado"` | Emoji misturado com texto |
 
-### O que ele ignora
+### O que ignora
 
 | Padrão | Exemplo | Motivo |
 |---------|---------|--------|
-| camelCase / snake_case | `usuariosAtivos`, `contagem_erros` | Identificadores JS |
+| camelCase / snake_case | `activeUsers`, `error_count` | Identificadores JS |
 | Classes CSS / Tailwind | `py-3 px-4`, `text-gray-500` | Estilização, não texto de UI |
-| URLs e caminhos de arquivo | `https://...`, `./componentes/` | Imports, recursos |
+| URLs e caminhos de arquivo | `https://...`, `./components/` | Imports, recursos |
 | Declarações de código | `const t =`, `return null` | Código JS |
-| Constantes em MAIÚSCULAS | `API_URL`, `MAX_TENTATIVAS` | Configuração |
+| Constantes MAIÚSCULAS | `API_URL`, `MAX_RETRIES` | Configuração |
 | Números puros / hex | `#fff`, `42` | Valores técnicos |
 
 ### Pipeline de detecção por arquivo
 
 ```
 Linha por linha → 
-  ① É um nó de texto JSX (>texto<? 
+  ① Isto é um nó de texto JSX (>texto<? 
      → Verificar se parece legível → Sinalizar como JSX
   ② Há uma string entre aspas ("..." ou '...')? 
      → É um identificador JS? → Pular
@@ -149,7 +187,7 @@ Linha por linha →
 
 ## Convenções de nomenclatura de chaves
 
-O scanner gera automaticamente chaves em camelCase a partir do texto em francês/inglês:
+O scanner gera automaticamente chaves camelCase a partir do texto em francês/inglês:
 
 | Texto original | Chave gerada |
 |--------------|---------------|
@@ -158,62 +196,29 @@ O scanner gera automaticamente chaves em camelCase a partir do texto em francês
 | `"Wallet non connecté"` | `walletNonConnecte` |
 | `"Hello world"` | `helloWorld` |
 
-**Colisões** recebem um sufixo `_N` (`titulo_2`, `titulo_3`). As chaves devem ser revisadas após a geração.
+**Colisões** recebem um sufixo `_N` (`title_2`, `title_3`). As chaves devem ser revisadas após a geração.
 
 ---
 
 ## Garantias de segurança
 
-Cada correção automática passa por estas verificações:
+Cada autopatch passa por estas verificações:
 
 1. **Import adicionado** — `import { useTranslations } from "next-intl"` se ausente
 2. **Declaração adicionada** — `const t = useTranslations("Namespace")` após imports
 3. **Chaves balanceadas** — `{}[]()` verifica se não há JSX quebrado
-4. **t() dentro de strings detectado** — `placeholder="{t("chave")}"` seria renderizado como texto literal
+4. **t() dentro de strings detectado** — `placeholder="{t("key")}"` renderizaria como texto literal
 5. **Escrita é atômica** — arquivo só é escrito se todas as verificações passarem
 
 ---
 
 ## Contribuições da comunidade são bem-vindas
 
-Esta ferramenta melhora com mais padrões de detecção de idioma. Aqui estão algumas formas de ajudar:
+Esta ferramenta é **código aberto e orientada pela comunidade**. Faça fork, melhore, compartilhe.
+Cada contribuição — seja um novo padrão de idioma, um adaptador de framework ou uma correção de bug — ajuda a tornar a web mais acessível.
 
-### 1. Adicionar detecção para seu idioma
+Aceitamos especialmente PRs de desenvolvedores que falam idiomas atualmente sub-representados em ferramentas de i18n.
 
-O modo `--universal` captura todos os scripts, mas padrões específicos melhoram a precisão. Adicione:
+### 1. Adicione detecção para seu idioma
 
-- **Conjuntos de caracteres acentuados** — Vietnamita (ăâđêôơư), Polonês (łężźć), Romeno (ăâîșț), etc.
-- **Stopwords não latinas** — Palavras comuns em Árabe, Hindi, Tailandês, Grego que são texto de UI, não código
-- **Detecção CJK** — Intervalos de caracteres Chinês/Japonês/Coreano (já incluídos, mas ajuste por sub-idioma ajuda)
-
-### 2. Adaptadores de framework
-
-- Suporte à sintaxe `react-i18next` / `i18next` (atualmente apenas next-intl)
-- Detectar padrões `formatMessage()`, `intl.formatMessage()`, `$t()`
-- Adicionar suporte a Vue.js / Svelte / Angular
-
-### 3. Melhorias na nomenclatura de chaves
-
-- Melhor inferência de namespace a partir da estrutura de diretórios
-- Sugestões de chaves em vários idiomas (não apenas do francês)
-- Integração com sistemas existentes de gerenciamento de tradução
-
-### 4. Integrações CI/CD
-
-- GitHub Action para executar escaneamento em PRs
-- Falhar CI se novo texto hardcoded for introduzido
-- Comentário automático em PRs com resultados do escaneamento
-
-### 5. Plugins para IDE
-
-- Extensão VS Code para destacar texto hardcoded inline
-- Correção rápida sugerida para envolver em chamada `t()`
-- Explorador de arquivos de localidade
-
----
-
-## Construído para seu projeto
-
-Este scanner foi construído para o projeto **[Subvox](https://github.com/Nansoouu/subvox)** — uma plataforma de legendas de vídeo open-source que suporta 150+ idiomas de legenda e 20 idiomas de UI.
-
-O scanner funciona com QUALQUER projeto Next.js que use next-intl. Basta apontar
+O modo `--universal` captura todos os scripts, mas padrões específicos

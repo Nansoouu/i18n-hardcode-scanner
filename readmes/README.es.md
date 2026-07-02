@@ -35,11 +35,17 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Características
 
-- **Detección independiente del idioma** — encuentra texto legible en CUALQUIER idioma (francés, inglés, vietnamita, árabe, CJK, cirílico…)
+- **Detección independiente del idioma** — encuentra texto legible por humanos en CUALQUIER idioma (francés, inglés, vietnamita, árabe, CJK, cirílico…)
 - **Modo específico para francés** — ajustado para proyectos franceses, menos falsos positivos
 - **Informe markdown compartible** — perfecto para revisión en equipo o artefactos de CI
 - **Parcheo automático seguro** — añade `import { useTranslations }`, declara `const t = useTranslations(...)`, reemplaza texto JSX, verifica sintaxis
@@ -48,16 +54,48 @@
 
 ---
 
+## Estructura del proyecto
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # El escáner (archivo único, autocontenido)
+├── scripts/
+│   ├── sync-i18n.py            # Script de traducción por lotes DeepSeek
+│   └── no-emoji-i18n.sh        # Hook pre-commit para archivos de locale sin emojis
+├── readmes/                    # READMEs traducidos
+├── pyproject.toml              # Empaquetado Python (opcional)
+├── LICENSE                     # MIT
+└── README.md                   # Este archivo
+```
+
 ## Inicio rápido
 
 ```bash
-# Clonar y ejecutar
+# Clonar y ejecutar (simulación — no se necesita clave API)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Escanear tu proyecto (simulación, sin cambios)
 python3 i18n_hardcode_scanner.py --project /ruta/a/tu/frontend --universal --dry-run
 ```
+
+---
+
+## Clave API — DeepSeek (opcional)
+
+El pipeline de traducción (`--auto`, `--translate`, `--update-stale`) usa DeepSeek para traducir claves a 20 idiomas. Necesitas una clave API **solo** para estas funciones.
+
+```bash
+# 1. Obtén una clave: https://platform.deepseek.com/api_keys
+# 2. Proporciónala mediante variable de entorno:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./mi-app --translate
+
+# O crea ~/.hermes/auth.json (detección automática):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Simulación, inyectar, parche-seguro, ci, verificar-desactualizados** — ninguno de estos necesita una clave API.
+
+---
 
 ---
 
@@ -83,10 +121,10 @@ python3 i18n_hardcode_scanner.py --project ./mi-app --universal --dry-run
 ### Inyectar y traducir
 
 ```bash
-# Inyectar claves descubiertas en fr.json
+# Inyecta las claves descubiertas en fr.json
 python3 i18n_hardcode_scanner.py --project ./mi-app --inject
 
-# Traducir a los 20 locales vía DeepSeek
+# Traduce a los 20 locales vía DeepSeek
 python3 i18n_hardcode_scanner.py --project ./mi-app --translate
 
 # Pipeline completo: inyectar + traducir
@@ -103,32 +141,32 @@ python3 i18n_hardcode_scanner.py --project ./mi-app --patch-safe --dry-run
 python3 i18n_hardcode_scanner.py --project ./mi-app --patch-safe
 ```
 
-Solo los nodos de texto JSX (`>texto<`) se reemplazan automáticamente. Los arrays de datos y cadenas de atributos se marcan para revisión manual.
+Solo los nodos de texto JSX (`>texto<`) se reemplazan automáticamente. Los arrays de datos y atributos de cadena se marcan para revisión manual.
 
 ---
 
 ## Cómo funciona
 
-El escáner **no** utiliza diccionarios específicos de idioma. En su lugar, busca **patrones técnicos** que distinguen el texto de UI del código:
+El escáner **no** usa diccionarios específicos de idioma. En su lugar, busca **patrones técnicos** que distinguen el texto de UI del código:
 
 ### Lo que captura
 
 | Patrón | Ejemplo | Detecta |
-|--------|---------|---------|
+|---------|---------|---------|
 | Caracteres latinos acentuados | `é`, `ñ`, `ü` | Francés, español, alemán, vietnamita… |
 | Escrituras no latinas | 你好, Привет, العربية | CJK, cirílico, árabe… |
 | Frases de varias palabras | `"Subiendo archivo..."` | Cualquier idioma con espacios |
 | Puntuación de oraciones | `"¡Hecho!"`, `"¿Continuar?"` | Termina con `.`, `!`, `?`, `:` |
 | Palabras en mayúscula inicial | `"Panel"`, `"Paramètres"` | Nombres propios, títulos de sección |
-| Emoji en texto | `"✅ Copiado"` | Emoji + texto mixto |
+| Emoji en texto | `"✅ Copiado"` | Emoji mixto + texto |
 
 ### Lo que omite
 
 | Patrón | Ejemplo | Razón |
-|--------|---------|-------|
+|---------|---------|--------|
 | camelCase / snake_case | `activeUsers`, `error_count` | Identificadores JS |
 | Clases CSS / Tailwind | `py-3 px-4`, `text-gray-500` | Estilo, no texto de UI |
-| URLs y rutas de archivo | `https://...`, `./componentes/` | Importaciones, recursos |
+| URLs y rutas de archivo | `https://...`, `./components/` | Importaciones, recursos |
 | Sentencias de código | `const t =`, `return null` | Código JS |
 | Constantes en MAYÚSCULAS | `API_URL`, `MAX_RETRIES` | Configuración |
 | Números puros / hex | `#fff`, `42` | Valores técnicos |
@@ -137,12 +175,12 @@ El escáner **no** utiliza diccionarios específicos de idioma. En su lugar, bus
 
 ```
 Línea por línea → 
-  ① ¿Es un nodo de texto JSX (>texto<)? 
-     → Verificar si parece legible → Marcar como JSX
+  ① ¿Es un nodo de texto JSX (>texto<? 
+     → Verificar si parece legible por humanos → Marcar como JSX
   ② ¿Hay una cadena entre comillas ("..." o '...')? 
      → ¿Es un identificador JS? → Omitir
      → ¿Es técnico? → Omitir
-     → ¿Es legible? → Marcar como STRING
+     → ¿Es legible por humanos? → Marcar como CADENA
 ```
 
 ---
@@ -152,7 +190,7 @@ Línea por línea →
 El escáner genera automáticamente claves en camelCase a partir del texto en francés/inglés:
 
 | Texto original | Clave generada |
-|---------------|----------------|
+|--------------|---------------|
 | `"Paiement annulé"` | `paiementAnnule` |
 | `"✅ Copié"` | `copie` |
 | `"Wallet non connecté"` | `walletNonConnecte` |
@@ -168,52 +206,19 @@ Cada parche automático pasa por estas verificaciones:
 
 1. **Importación añadida** — `import { useTranslations } from "next-intl"` si falta
 2. **Declaración añadida** — `const t = useTranslations("Namespace")` después de las importaciones
-3. **Llaves equilibradas** — `{}[]()` verifica que no haya JSX roto
-4. **t() dentro de cadenas detectado** — `placeholder="{t("clave")}"` se renderizaría como texto literal
+3. **Llaves balanceadas** — `{}[]()` verifica que no haya JSX roto
+4. **t() dentro de cadenas detectado** — `placeholder="{t("key")}"` se renderizaría como texto literal
 5. **Escritura atómica** — el archivo solo se escribe si todas las verificaciones pasan
 
 ---
 
 ## Contribuciones de la comunidad deseadas
 
-Esta herramienta mejora con más patrones de detección de idiomas. Aquí hay algunas formas de ayudar:
+Esta herramienta es **código abierto e impulsada por la comunidad**. Haz fork, mejórala, compártela.
+Cada contribución — ya sea un nuevo patrón de idioma, un adaptador de framework o una corrección de errores — ayuda a hacer la web más accesible.
+
+Damos especialmente la bienvenida a PRs de desarrolladores que hablen idiomas actualmente subrepresentados en las herramientas de i18n.
 
 ### 1. Añadir detección para tu idioma
 
-El modo `--universal` captura todas las escrituras, pero los patrones específicos mejoran la precisión. Añade:
-
-- **Conjuntos de caracteres acentuados** — Vietnamita (ăâđêôơư), Polaco (łężźć), Rumano (ăâîșț), etc.
-- **Palabras vacías no latinas** — Palabras comunes en árabe, hindi, tailandés, griego que son texto de UI, no código
-- **Detección CJK** — Rangos de caracteres chino/japonés/coreano (ya incluidos, pero el ajuste por sub-idioma ayuda)
-
-### 2. Adaptadores de frameworks
-
-- Soporte para sintaxis `react-i18next` / `i18next` (actualmente solo next-intl)
-- Detectar patrones `formatMessage()`, `intl.formatMessage()`, `$t()`
-- Añadir soporte para Vue.js / Svelte / Angular
-
-### 3. Mejoras en la nomenclatura de claves
-
-- Mejor inferencia de espacios de nombres desde la estructura de directorios
-- Sugerencias de claves multilingües (no solo desde francés)
-- Integración con sistemas de gestión de traducciones existentes
-
-### 4. Integraciones CI/CD
-
-- Acción de GitHub para ejecutar escaneo en PRs
-- Fallar CI si se introduce nuevo texto hardcodeado
-- Comentario automático en PRs con resultados del escaneo
-
-### 5. Plugins para IDE
-
-- Extensión de VS Code para resaltar texto hardcodeado en línea
-- Solución rápida sugerida para envolver en llamada `t()`
-- Explorador de archivos de locale
-
----
-
-## Construido para tu proyecto
-
-Este escáner fue construido para el proyecto **[Subvox](https://github.com/Nansoouu/subvox)** — una plataforma de subtítulos de video de código abierto que soporta 150+ idiomas de subtítulos y 20 idiomas de UI.
-
-El escáner funciona con CUALQUIER proyecto Next.js que use next-intl. Solo apunta
+El modo `--universal` captura todas las escrituras, pero los patrones específicos...

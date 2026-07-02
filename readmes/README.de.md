@@ -35,11 +35,17 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Funktionen
 
-- **Sprachunabhängige Erkennung** — findet lesbaren Text in JEDER Sprache (Französisch, Englisch, Vietnamesisch, Arabisch, CJK, Kyrillisch…)
+- **Sprachunabhängige Erkennung** — findet menschenlesbaren Text in JEDER Sprache (Französisch, Englisch, Vietnamesisch, Arabisch, CJK, Kyrillisch…)
 - **Französisch-spezifischer Modus** — optimiert für französische Projekte, weniger Fehlalarme
 - **Teilbarer Markdown-Bericht** — perfekt für Team-Reviews oder CI-Artefakte
 - **Sicheres automatisches Patchen** — fügt `import { useTranslations }` hinzu, deklariert `const t = useTranslations(...)`, ersetzt JSX-Text, überprüft Syntax
@@ -48,16 +54,48 @@
 
 ---
 
+## Projektstruktur
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # Der Scanner (einzelne Datei, eigenständig)
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek Batch-Übersetzungsskript
+│   └── no-emoji-i18n.sh        # Pre-Commit-Hook für emoji-freie Locale-Dateien
+├── readmes/                    # Übersetzte READMEs
+├── pyproject.toml              # Python-Paketierung (optional)
+├── LICENSE                     # MIT
+└── README.md                   # Diese Datei
+```
+
 ## Schnellstart
 
 ```bash
-# Klonen und ausführen
+# Klonen und ausführen (Trockenlauf — kein API-Schlüssel erforderlich)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Projekt scannen (Probelauf, keine Änderungen)
 python3 i18n_hardcode_scanner.py --project /pfad/zu/ihrem/frontend --universal --dry-run
 ```
+
+---
+
+## API-Schlüssel — DeepSeek (optional)
+
+Die Übersetzungspipeline (`--auto`, `--translate`, `--update-stale`) verwendet DeepSeek, um Schlüssel in 20 Sprachen zu übersetzen. Sie benötigen einen API-Schlüssel **nur** für diese Funktionen.
+
+```bash
+# 1. Schlüssel holen: https://platform.deepseek.com/api_keys
+# 2. Über Umgebungsvariable bereitstellen:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./meine-app --translate
+
+# Oder ~/.hermes/auth.json erstellen (automatisch erkannt):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Trockenlauf, Einfügen, Patch-sicher, CI, Prüfen-veraltet** — keines davon benötigt einen API-Schlüssel.
+
+---
 
 ---
 
@@ -69,14 +107,14 @@ python3 i18n_hardcode_scanner.py --project /pfad/zu/ihrem/frontend --universal -
 # Französisch-spezifisch (präziser, weniger Ergebnisse)
 python3 i18n_hardcode_scanner.py --project ./meine-app --dry-run
 
-# Alle Sprachen (vollständig, erfasst alles)
+# Alle Sprachen (erschöpfend, erfasst alles)
 python3 i18n_hardcode_scanner.py --project ./meine-app --universal --dry-run
 ```
 
 ### Bericht
 
 ```bash
-# Erzeugt scripts/i18n-reports/hardcode-scan-{zeitstempel}.md
+# Erzeugt scripts/i18n-reports/hardcode-scan-{timestamp}.md
 # + scripts/i18n-replacements.sh mit Patch-Kandidaten pro Datei
 ```
 
@@ -89,14 +127,14 @@ python3 i18n_hardcode_scanner.py --project ./meine-app --inject
 # In alle 20 Locales via DeepSeek übersetzen
 python3 i18n_hardcode_scanner.py --project ./meine-app --translate
 
-# Vollständige Pipeline: einfügen + übersetzen
+# Vollständige Pipeline: Einfügen + Übersetzen
 python3 i18n_hardcode_scanner.py --project ./meine-app --auto
 ```
 
 ### Sicheres Patchen
 
 ```bash
-# Probelauf (zeigt Unterschiede, schreibt nichts)
+# Trockenlauf (zeigt Unterschiede, schreibt nichts)
 python3 i18n_hardcode_scanner.py --project ./meine-app --patch-safe --dry-run
 
 # Anwenden (fügt Imports, t() hinzu, ersetzt JSX-Text, überprüft Syntax)
@@ -119,8 +157,8 @@ Der Scanner verwendet **keine** sprachspezifischen Wörterbücher. Stattdessen s
 | Nicht-lateinische Schriften | 你好, Привет, العربية | CJK, Kyrillisch, Arabisch… |
 | Mehrwort-Phrasen | `"Datei hochladen..."` | Jede Sprache mit Leerzeichen |
 | Satzzeichen | `"Fertig!"`, `"Fortfahren?"` | Endet mit `.`, `!`, `?`, `:` |
-| Großgeschriebene Wörter | `"Dashboard"`, `"Paramètres"` | Eigennamen, Abschnittstitel |
-| Emoji im Text | `"✅ Kopiert"` | Gemischt Emoji + Text |
+| Titel-Schreibweise | `"Dashboard"`, `"Paramètres"` | Eigennamen, Abschnittstitel |
+| Emoji im Text | `"✅ Kopiert"` | Gemischtes Emoji + Text |
 
 ### Was er überspringt
 
@@ -138,11 +176,11 @@ Der Scanner verwendet **keine** sprachspezifischen Wörterbücher. Stattdessen s
 ```
 Zeile für Zeile → 
   ① Ist dies ein JSX-Textknoten (>text<)? 
-     → Prüfen, ob es lesbar aussieht → Als JSX markieren
+     → Prüfen, ob es menschenlesbar aussieht → Als JSX markieren
   ② Gibt es einen in Anführungszeichen gesetzten String ("..." oder '...')? 
      → Ist es ein JS-Bezeichner? → Überspringen
      → Ist es technisch? → Überspringen
-     → Ist es lesbar? → Als STRING markieren
+     → Ist es menschenlesbar? → Als STRING markieren
 ```
 
 ---
@@ -152,7 +190,7 @@ Zeile für Zeile →
 Der Scanner generiert automatisch camelCase-Schlüssel aus dem französischen/englischen Text:
 
 | Originaltext | Generierter Schlüssel |
-|-------------|----------------------|
+|--------------|----------------------|
 | `"Paiement annulé"` | `paiementAnnule` |
 | `"✅ Copié"` | `copie` |
 | `"Wallet non connecté"` | `walletNonConnecte` |
@@ -168,7 +206,7 @@ Jeder automatische Patch durchläuft diese Prüfungen:
 
 1. **Import hinzugefügt** — `import { useTranslations } from "next-intl"` falls fehlend
 2. **Deklaration hinzugefügt** — `const t = useTranslations("Namespace")` nach Imports
-3. **Klammern ausgeglichen** — `{}[]()` überprüft auf defektes JSX
+3. **Geschweifte Klammern ausgeglichen** — `{}[]()` überprüft auf unversehrte JSX
 4. **t() innerhalb von Strings erkannt** — `placeholder="{t("key")}"` würde als Literaltext gerendert
 5. **Schreiben ist atomar** — Datei wird nur geschrieben, wenn alle Prüfungen bestanden sind
 
@@ -176,44 +214,11 @@ Jeder automatische Patch durchläuft diese Prüfungen:
 
 ## Community-Beiträge erwünscht
 
-Dieses Tool wird mit mehr Spracherkennungsmustern besser. Hier sind einige Möglichkeiten zu helfen:
+Dieses Tool ist **Open Source und gemeinschaftsgetrieben**. Forken Sie es, verbessern Sie es, teilen Sie es.
+Jeder Beitrag — ob ein neues Sprachmuster, ein Framework-Adapter oder ein Bugfix — hilft, das Web zugänglicher zu machen.
+
+Wir begrüßen besonders PRs von Entwicklern, die Sprachen sprechen, die in i18n-Tools derzeit unterrepräsentiert sind.
 
 ### 1. Erkennung für Ihre Sprache hinzufügen
 
-Der `--universal`-Modus erfasst alle Schriften, aber spezifische Muster verbessern die Genauigkeit. Fügen Sie hinzu:
-
-- **Akzentuierte Zeichensätze** — Vietnamesisch (ăâđêôơư), Polnisch (łężźć), Rumänisch (ăâîșț) usw.
-- **Nicht-lateinische Stoppwörter** — Häufige arabische, Hindi-, Thai-, griechische Wörter, die UI-Text sind, kein Code
-- **CJK-Erkennung** — Chinesische/japanische/koreanische Zeichenbereiche (bereits enthalten, aber Untersprachen-Tuning hilft)
-
-### 2. Framework-Adapter
-
-- Unterstützung für `react-i18next` / `i18next`-Syntax (derzeit nur next-intl)
-- Erkennung von `formatMessage()`, `intl.formatMessage()`, `$t()`-Mustern
-- Vue.js / Svelte / Angular-Unterstützung hinzufügen
-
-### 3. Verbesserungen der Schlüsselbenennung
-
-- Bessere Namespace-Ableitung aus der Verzeichnisstruktur
-- Mehrsprachige Schlüsselvorschläge (nicht nur aus Französisch)
-- Integration mit bestehenden Übersetzungsmanagementsystemen
-
-### 4. CI/CD-Integrationen
-
-- GitHub-Aktion zum Scannen bei PRs
-- CI fehlschlagen lassen, wenn neuer hartcodierter Text eingeführt wird
-- Automatische Kommentare bei PRs mit Scan-Ergebnissen
-
-### 5. IDE-Plugins
-
-- VS Code-Erweiterung zur Inline-Hervorhebung von hartcodiertem Text
-- Vorgeschlagene Schnellkorrektur zum Einwickeln in `t()`-Aufruf
-- Locale-Datei-Explorer
-
----
-
-## Für Ihr Projekt erstellen
-
-Dieser Scanner wurde für das **[Subvox](https://github.com/Nansoouu/subvox)**-Projekt entwickelt — eine Open-Source-Videountertitel-Plattform mit Unterstützung für 150+ Untertitelsprachen und 20 UI-Sprachen.
-
-Der Scanner funktioniert mit JEDEM Next.js-Projekt, das next-intl verwendet. Geben Sie einfach den
+Der `--universal`-Modus erfasst alle Schriften, aber spezifische Muster können

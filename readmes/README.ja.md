@@ -35,12 +35,18 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## 機能
 
 - **言語に依存しない検出** — あらゆる言語（フランス語、英語、ベトナム語、アラビア語、CJK、キリル文字など）の人間が読めるテキストを検出します
-- **フランス語特化モード** — フランス語プロジェクト向けに調整済み、誤検出が少ない
+- **フランス語特化モード** — フランス語プロジェクト向けに調整、誤検出が少ない
 - **共有可能なMarkdownレポート** — チームレビューやCIアーティファクトに最適
 - **安全な自動パッチ** — `import { useTranslations }` を追加、`const t = useTranslations(...)` を宣言、JSXテキストを置換、構文を検証
 - **翻訳パイプライン** — キーを `fr.json` に注入し、DeepSeek経由ですべての20ロケールに翻訳
@@ -48,16 +54,48 @@
 
 ---
 
+## プロジェクト構造
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # スキャナー（単一ファイル、自己完結型）
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek一括翻訳スクリプト
+│   └── no-emoji-i18n.sh        # 絵文字なしロケールファイル用のpre-commitフック
+├── readmes/                    # 翻訳済みREADME
+├── pyproject.toml              # Pythonパッケージング（オプション）
+├── LICENSE                     # MIT
+└── README.md                   # このファイル
+```
+
 ## クイックスタート
 
 ```bash
-# クローンして実行
+# クローンして実行（ドライラン — APIキー不要）
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# プロジェクトをスキャン（ドライラン、変更なし）
 python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --dry-run
 ```
+
+---
+
+## APIキー — DeepSeek（オプション）
+
+翻訳パイプライン（`--auto`、`--translate`、`--update-stale`）はDeepSeekを使用してキーを20言語に翻訳します。これらの機能に**のみ**APIキーが必要です。
+
+```bash
+# 1. キーを取得: https://platform.deepseek.com/api_keys
+# 2. 環境変数で提供:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./my-app --translate
+
+# または ~/.hermes/auth.json を作成（自動検出）:
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **ドライラン、注入、パッチセーフ、CI、チェックスタイル** — これらはAPIキーを必要としません。
+
+---
 
 ---
 
@@ -77,19 +115,19 @@ python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
 
 ```bash
 # scripts/i18n-reports/hardcode-scan-{timestamp}.md を生成
-# + ファイルごとのパッチ候補を含む scripts/i18n-replacements.sh を生成
+# + ファイルごとのパッチ候補を含む scripts/i18n-replacements.sh
 ```
 
 ### 注入と翻訳
 
 ```bash
-# 検出したキーを fr.json に注入
+# 検出されたキーを fr.json に注入
 python3 i18n_hardcode_scanner.py --project ./my-app --inject
 
 # DeepSeek経由ですべての20ロケールに翻訳
 python3 i18n_hardcode_scanner.py --project ./my-app --translate
 
-# フルパイプライン：注入 + 翻訳
+# 完全パイプライン: 注入 + 翻訳
 python3 i18n_hardcode_scanner.py --project ./my-app --auto
 ```
 
@@ -99,17 +137,17 @@ python3 i18n_hardcode_scanner.py --project ./my-app --auto
 # ドライラン（差分を表示、書き込みなし）
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe --dry-run
 
-# 適用（インポート、t()、JSXテキスト置換、構文検証を追加）
+# 適用（インポート、t()、JSXテキストの置換、構文検証を追加）
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe
 ```
 
-JSXテキストノード（`>text<`）のみが自動置換されます。データ配列と属性文字列は手動レビュー用にフラグが立てられます。
+JSXテキストノード（`>text<`）のみが自動置換されます。データ配列と属性文字列は手動レビュー用にフラグ付けされます。
 
 ---
 
 ## 仕組み
 
-スキャナーは**言語固有の辞書を使用しません**。代わりに、UIテキストとコードを区別する**技術的なパターン**を探します：
+スキャナーは言語固有の辞書を**使用しません**。代わりに、UIテキストとコードを区別する**技術的パターン**を探します：
 
 ### キャッチするもの
 
@@ -131,15 +169,15 @@ JSXテキストノード（`>text<`）のみが自動置換されます。デー
 | URLとファイルパス | `https://...`、`./components/` | インポート、リソース |
 | コード文 | `const t =`、`return null` | JSコード |
 | ALL_CAPS定数 | `API_URL`、`MAX_RETRIES` | 設定 |
-| 純粋な数字 / 16進数 | `#fff`、`42` | 技術的な値 |
+| 純粋な数値 / 16進数 | `#fff`、`42` | 技術的値 |
 
 ### ファイルごとの検出パイプライン
 
 ```
 行ごとに →
-  ① JSXテキストノード（>text<）か？
-     → 人間が読めるかチェック → JSXとしてフラグ
-  ② 引用符で囲まれた文字列（"..." または '...'）か？
+  ① これはJSXテキストノード（>text<）か？
+     → 人間が読めるように見えるかチェック → JSXとしてフラグ
+  ② 引用符で囲まれた文字列（"..." または '...'）があるか？
      → JS識別子か？ → スキップ
      → 技術的なものか？ → スキップ
      → 人間が読めるか？ → STRINGとしてフラグ
@@ -149,7 +187,7 @@ JSXテキストノード（`>text<`）のみが自動置換されます。デー
 
 ## キー命名規則
 
-スキャナーはフランス語/英語のテキストからcamelCaseキーを自動生成します：
+スキャナーはフランス語/英語のテキストから自動的にcamelCaseキーを生成します：
 
 | 元のテキスト | 生成されたキー |
 |--------------|---------------|
@@ -158,7 +196,7 @@ JSXテキストノード（`>text<`）のみが自動置換されます。デー
 | `"Wallet non connecté"` | `walletNonConnecte` |
 | `"Hello world"` | `helloWorld` |
 
-**衝突**には `_N` サフィックスが付きます（`title_2`、`title_3`）。キーは生成後にレビューする必要があります。
+**競合**がある場合は `_N` サフィックス（`title_2`、`title_3`）が付きます。キーは生成後にレビューする必要があります。
 
 ---
 
@@ -166,54 +204,21 @@ JSXテキストノード（`>text<`）のみが自動置換されます。デー
 
 すべての自動パッチは以下のチェックを通過します：
 
-1. **インポート追加** — `import { useTranslations } from "next-intl"` が不足している場合に追加
+1. **インポート追加** — `import { useTranslations } from "next-intl"` が欠けている場合に追加
 2. **宣言追加** — インポート後に `const t = useTranslations("Namespace")` を追加
 3. **括弧のバランス** — `{}[]()` でJSXが壊れていないことを検証
-4. **t() が文字列内にある場合を検出** — `placeholder="{t("key")}"` はリテラルテキストとしてレンダリングされる
-5. **書き込みはアトミック** — すべてのチェックに合格した場合のみファイルが書き込まれる
+4. **文字列内のt()を検出** — `placeholder="{t("key")}"` はリテラルテキストとしてレンダリングされる
+5. **書き込みはアトミック** — すべてのチェックが成功した場合のみファイルが書き込まれる
 
 ---
 
 ## コミュニティ貢献歓迎
 
-このツールは、より多くの言語検出パターンによって改善されます。以下は貢献方法の例です：
+このツールは**オープンソースでコミュニティ主導**です。フォークして、改善して、共有してください。
+新しい言語パターン、フレームワークアダプター、バグ修正など、すべての貢献がウェブをよりアクセシブルにするのに役立ちます。
 
-### 1. 言語の検出を追加
+特に、i18nツールで現在十分にカバーされていない言語を話す開発者からのPRを歓迎します。
 
-`--universal` モードはすべての文字をキャッチしますが、特定のパターンが精度を向上させます。以下を追加：
+### 1. あなたの言語の検出を追加
 
-- **アクセント付き文字セット** — ベトナム語（ăâđêôơư）、ポーランド語（łężźć）、ルーマニア語（ăâîșț）など
-- **非ラテン語のストップワード** — コードではなくUIテキストである一般的なアラビア語、ヒンディー語、タイ語、ギリシャ語の単語
-- **CJK検出** — 中国語/日本語/韓国語の文字範囲（すでに含まれていますが、サブ言語の調整が役立ちます）
-
-### 2. フレームワークアダプター
-
-- `react-i18next` / `i18next` 構文のサポート（現在はnext-intlのみ）
-- `formatMessage()`、`intl.formatMessage()`、`$t()` パターンの検出
-- Vue.js / Svelte / Angularのサポート追加
-
-### 3. キー命名の改善
-
-- ディレクトリ構造からのより良い名前空間推測
-- 多言語キーの提案（フランス語だけでなく）
-- 既存の翻訳管理システムとの統合
-
-### 4. CI/CD統合
-
-- PRでスキャンを実行するGitHub Action
-- 新しいハードコードされたテキストが導入された場合にCIを失敗させる
-- スキャン結果でPRに自動コメント
-
-### 5. IDEプラグイン
-
-- インラインでハードコードされたテキストを強調表示するVS Code拡張機能
-- `t()` 呼び出しでラップするクイックフィックスを提案
-- ロケールファイルエクスプローラー
-
----
-
-## プロジェクト用にビルド
-
-このスキャナーは **[Subvox](https://github.com/Nansoouu/subvox)** プロジェクト用に構築されました — 150以上の字幕言語と20のUI言語をサポートするオープンソースの動画字幕プラットフォームです。
-
-このスキャナーは、next-intlを使用する任意のNext.jsプロジェクトで動作します。`--project` を指定するだけです。
+`--universal` モードはすべての文字をキャッチしますが、特定のパターンは

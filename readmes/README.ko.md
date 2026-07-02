@@ -35,29 +35,67 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## 기능
 
-- **언어 무관 감지** — 모든 언어(프랑스어, 영어, 베트남어, 아랍어, CJK, 키릴 문자 등)에서 사람이 읽을 수 있는 텍스트를 찾습니다.
-- **프랑스어 특화 모드** — 프랑스어 프로젝트에 최적화되어 있으며, 오탐지가 적습니다.
+- **언어에 구애받지 않는 탐지** — 모든 언어(프랑스어, 영어, 베트남어, 아랍어, CJK, 키릴 문자 등)에서 사람이 읽을 수 있는 텍스트를 찾습니다.
+- **프랑스어 특화 모드** — 프랑스어 프로젝트에 맞게 조정되어 거짓 양성(false positive)이 적습니다.
 - **공유 가능한 마크다운 보고서** — 팀 검토 또는 CI 아티팩트에 적합합니다.
-- **안전한 자동 패치** — `import { useTranslations }` 추가, `const t = useTranslations(...)` 선언, JSX 텍스트 교체, 구문 검증을 수행합니다.
+- **안전한 자동 패치** — `import { useTranslations }`를 추가하고, `const t = useTranslations(...)`를 선언하며, JSX 텍스트를 교체하고, 구문을 검증합니다.
 - **번역 파이프라인** — 키를 `fr.json`에 주입한 후 DeepSeek을 통해 20개 로케일로 번역합니다.
-- **빌드 단계 불필요** — 단일 Python 파일, 제로 의존성(stdlib + 선택적 `httpx`)
+- **빌드 단계 불필요** — 단일 Python 파일, 종속성 없음(표준 라이브러리 + 선택적 `httpx`)
 
 ---
+
+## 프로젝트 구조
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # 스캐너 (단일 파일, 자체 포함)
+├── scripts/
+│   ├── sync-i18n.py            # DeepSeek 배치 번역 스크립트
+│   └── no-emoji-i18n.sh        # 이모지 없는 로케일 파일을 위한 사전 커밋 훅
+├── readmes/                    # 번역된 README
+├── pyproject.toml              # Python 패키징 (선택 사항)
+├── LICENSE                     # MIT
+└── README.md                   # 이 파일
+```
 
 ## 빠른 시작
 
 ```bash
-# 클론 및 실행
+# 클론 및 실행 (드라이 런 — API 키 불필요)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# 프로젝트 스캔 (드라이 런, 변경 없음)
 python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --dry-run
 ```
+
+---
+
+## API 키 — DeepSeek (선택 사항)
+
+번역 파이프라인(`--auto`, `--translate`, `--update-stale`)은 DeepSeek을 사용하여 키를 20개 언어로 번역합니다. 이러한 기능에만 API 키가 필요합니다.
+
+```bash
+# 1. 키 받기: https://platform.deepseek.com/api_keys
+# 2. 환경 변수로 제공:
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./my-app --translate
+
+# 또는 ~/.hermes/auth.json 생성 (자동 감지):
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **드라이 런, 주입, 안전 패치, CI, 오래된 항목 확인** — 이러한 기능에는 API 키가 필요하지 않습니다.
+
+---
 
 ---
 
@@ -66,10 +104,10 @@ python3 i18n_hardcode_scanner.py --project /path/to/your/frontend --universal --
 ### 스캔 모드
 
 ```bash
-# 프랑스어 특화 (더 정확함, 결과 수 적음)
+# 프랑스어 특화 (더 정확하고 결과 수 적음)
 python3 i18n_hardcode_scanner.py --project ./my-app --dry-run
 
-# 모든 언어 (포괄적, 모든 항목 감지)
+# 모든 언어 (철저하게 모든 것을 포착)
 python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
 ```
 
@@ -77,7 +115,7 @@ python3 i18n_hardcode_scanner.py --project ./my-app --universal --dry-run
 
 ```bash
 # scripts/i18n-reports/hardcode-scan-{timestamp}.md 생성
-# + 파일별 패치 후보가 포함된 scripts/i18n-replacements.sh 생성
+# + 파일별 패치 후보가 포함된 scripts/i18n-replacements.sh
 ```
 
 ### 주입 및 번역
@@ -96,14 +134,14 @@ python3 i18n_hardcode_scanner.py --project ./my-app --auto
 ### 안전한 패치
 
 ```bash
-# 드라이 런 (차이점 표시, 쓰지 않음)
+# 드라이 런 (차이점 표시, 아무것도 쓰지 않음)
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe --dry-run
 
-# 적용 (import, t(), JSX 텍스트 교체, 구문 검증 추가)
+# 적용 (import, t() 추가, JSX 텍스트 교체, 구문 검증)
 python3 i18n_hardcode_scanner.py --project ./my-app --patch-safe
 ```
 
-JSX 텍스트 노드(`>text<`)만 자동으로 교체됩니다. 데이터 배열과 속성 문자열은 수동 검토를 위해 플래그가 지정됩니다.
+JSX 텍스트 노드(`>text<`)만 자동으로 교체됩니다. 데이터 배열과 속성 문자열은 수동 검토를 위해 표시됩니다.
 
 ---
 
@@ -111,9 +149,9 @@ JSX 텍스트 노드(`>text<`)만 자동으로 교체됩니다. 데이터 배열
 
 스캐너는 언어별 사전을 사용하지 **않습니다**. 대신 UI 텍스트와 코드를 구분하는 **기술적 패턴**을 찾습니다:
 
-### 감지하는 항목
+### 포착하는 항목
 
-| 패턴 | 예시 | 감지 |
+| 패턴 | 예시 | 탐지 |
 |---------|---------|---------|
 | 악센트가 있는 라틴 문자 | `é`, `ñ`, `ü` | 프랑스어, 스페인어, 독일어, 베트남어… |
 | 비라틴 문자 | 你好, Привет, العربية | CJK, 키릴 문자, 아랍어… |
@@ -133,15 +171,15 @@ JSX 텍스트 노드(`>text<`)만 자동으로 교체됩니다. 데이터 배열
 | ALL_CAPS 상수 | `API_URL`, `MAX_RETRIES` | 설정 |
 | 순수 숫자 / 16진수 | `#fff`, `42` | 기술적 값 |
 
-### 파일별 감지 파이프라인
+### 파일별 탐지 파이프라인
 
 ```
 라인별로 →
-  ① JSX 텍스트 노드(>text<)인가?
+  ① 이것이 JSX 텍스트 노드(>text<)인가?
      → 사람이 읽을 수 있는지 확인 → JSX로 플래그 지정
   ② 따옴표로 묶인 문자열("..." 또는 '...')이 있는가?
-     → JS 식별자인가? → 건너뜀
-     → 기술적인가? → 건너뜀
+     → JS 식별자인가? → 건너뛰기
+     → 기술적인가? → 건너뛰기
      → 사람이 읽을 수 있는가? → STRING으로 플래그 지정
 ```
 
@@ -166,54 +204,21 @@ JSX 텍스트 노드(`>text<`)만 자동으로 교체됩니다. 데이터 배열
 
 모든 자동 패치는 다음 검사를 거칩니다:
 
-1. **임포트 추가** — `import { useTranslations } from "next-intl"` (없는 경우)
-2. **선언 추가** — 임포트 후 `const t = useTranslations("Namespace")` 추가
-3. **중괄호 균형 확인** — `{}[]()`로 JSX 손상 여부 검증
+1. **Import 추가** — 누락된 경우 `import { useTranslations } from "next-intl"` 추가
+2. **선언 추가** — import 뒤에 `const t = useTranslations("Namespace")` 추가
+3. **중괄호 균형 확인** — `{}[]()`로 깨진 JSX가 없는지 검증
 4. **문자열 내 t() 감지** — `placeholder="{t("key")}"`는 리터럴 텍스트로 렌더링됨
-5. **원자적 쓰기** — 모든 검사 통과 시에만 파일 쓰기
+5. **원자적 쓰기** — 모든 검사가 통과된 경우에만 파일 쓰기
 
 ---
 
 ## 커뮤니티 기여 환영
 
-이 도구는 더 많은 언어 감지 패턴이 추가될수록 더 좋아집니다. 도움을 주실 수 있는 방법은 다음과 같습니다:
+이 도구는 **오픈 소스이며 커뮤니티 주도**입니다. 포크하고, 개선하고, 공유하세요.
+새로운 언어 패턴, 프레임워크 어댑터 또는 버그 수정 등 모든 기여는 웹을 더 접근성 있게 만드는 데 도움이 됩니다.
 
-### 1. 사용자 언어 감지 추가
+특히 i18n 도구에서 현재 과소 대표되는 언어를 사용하는 개발자의 PR을 환영합니다.
 
-`--universal` 모드는 모든 문자를 감지하지만, 특정 패턴이 정확도를 향상시킵니다. 추가할 항목:
+### 1. 사용자 언어에 대한 탐지 추가
 
-- **악센트 문자 세트** — 베트남어(ăâđêôơư), 폴란드어(łężźć), 루마니아어(ăâîșț) 등
-- **비라틴 중지 단어** — 코드가 아닌 UI 텍스트인 일반적인 아랍어, 힌디어, 태국어, 그리스어 단어
-- **CJK 감지** — 중국어/일본어/한국어 문자 범위(이미 포함되어 있지만, 하위 언어 튜닝이 도움이 됨)
-
-### 2. 프레임워크 어댑터
-
-- `react-i18next` / `i18next` 구문 지원(현재는 next-intl만 지원)
-- `formatMessage()`, `intl.formatMessage()`, `$t()` 패턴 감지
-- Vue.js / Svelte / Angular 지원 추가
-
-### 3. 키 명명 개선
-
-- 디렉토리 구조에서 더 나은 네임스페이스 추론
-- 다국어 키 제안(프랑스어뿐만 아니라)
-- 기존 번역 관리 시스템과의 통합
-
-### 4. CI/CD 통합
-
-- PR에서 스캔을 실행하는 GitHub Action
-- 새로운 하드코딩 텍스트가 도입되면 CI 실패
-- 스캔 결과로 PR에 자동 댓글
-
-### 5. IDE 플러그인
-
-- 하드코딩된 텍스트를 인라인으로 강조하는 VS Code 확장
-- `t()` 호출로 래핑하는 빠른 수정 제안
-- 로케일 파일 탐색기
-
----
-
-## 프로젝트에 맞게 빌드
-
-이 스캐너는 **[Subvox](https://github.com/Nansoouu/subvox)** 프로젝트를 위해 제작되었습니다 — 150개 이상의 자막 언어와 20개의 UI 언어를 지원하는 오픈소스 비디오 자막 플랫폼입니다.
-
-이 스캐너는 next-intl을 사용하는 모든 Next.js 프로젝트에서 작동합니다.
+`--universal` 모드는 모든 문자를 포착하지만, 특정 패턴은

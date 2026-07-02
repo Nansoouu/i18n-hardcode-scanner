@@ -35,12 +35,18 @@
   <a href="readmes/README.vi.md"><img src="https://img.shields.io/badge/Tiếng Việt-VN-success" alt="Tiếng Việt"></a>
 </p>
 
+> **Support the author** — if this tool saves you time, send a donation to:
+
+> ```
+> 6bHv6bgWg5ZdD5GupvtdobFJBhVPihYhY7KyNA7qAigu
+> ```
+
 ---
 
 ## Fonctionnalités
 
 - **Détection indépendante de la langue** — trouve du texte lisible par l'humain dans TOUTE langue (français, anglais, vietnamien, arabe, CJK, cyrillique…)
-- **Mode spécifique français** — optimisé pour les projets français, moins de faux positifs
+- **Mode spécifique au français** — optimisé pour les projets français, moins de faux positifs
 - **Rapport markdown partageable** — parfait pour la révision en équipe ou les artefacts CI
 - **Correction automatique sécurisée** — ajoute `import { useTranslations }`, déclare `const t = useTranslations(...)`, remplace le texte JSX, vérifie la syntaxe
 - **Pipeline de traduction** — injecte les clés dans `fr.json`, puis traduit vers les 20 locales via DeepSeek
@@ -48,16 +54,48 @@
 
 ---
 
+## Structure du projet
+
+```
+i18n-hardcode-scanner/
+├── i18n_hardcode_scanner.py    # Le scanner (fichier unique, autonome)
+├── scripts/
+│   ├── sync-i18n.py            # Script de traduction batch DeepSeek
+│   └── no-emoji-i18n.sh        # Hook pre-commit pour les fichiers de locale sans emoji
+├── readmes/                    # READMEs traduits
+├── pyproject.toml              # Empaquetage Python (optionnel)
+├── LICENSE                     # MIT
+└── README.md                   # Ce fichier
+```
+
 ## Démarrage rapide
 
 ```bash
-# Cloner et exécuter
+# Cloner et exécuter (simulation — aucune clé API nécessaire)
 git clone https://github.com/Nansoouu/i18n-hardcode-scanner.git
 cd i18n-hardcode-scanner
-
-# Analyser votre projet (simulation, aucune modification)
 python3 i18n_hardcode_scanner.py --project /chemin/vers/votre/frontend --universal --dry-run
 ```
+
+---
+
+## Clé API — DeepSeek (optionnel)
+
+Le pipeline de traduction (`--auto`, `--translate`, `--update-stale`) utilise DeepSeek pour traduire les clés en 20 langues. Vous avez besoin d'une clé API **uniquement** pour ces fonctionnalités.
+
+```bash
+# 1. Obtenez une clé : https://platform.deepseek.com/api_keys
+# 2. Fournissez-la via une variable d'environnement :
+export DEEPSEEK_API_KEY="sk-..."
+python3 i18n_hardcode_scanner.py --project ./mon-app --translate
+
+# Ou créez ~/.hermes/auth.json (détection automatique) :
+# {"credential_pool": {"deepseek": [{"access_token": "sk-..."}]}}
+```
+
+> 💡 **Simulation, injection, correction sécurisée, ci, vérification des obsolètes** — aucune de ces options n'a besoin d'une clé API.
+
+---
 
 ---
 
@@ -66,7 +104,7 @@ python3 i18n_hardcode_scanner.py --project /chemin/vers/votre/frontend --univers
 ### Modes d'analyse
 
 ```bash
-# Spécifique français (plus précis, moins de résultats)
+# Spécifique au français (plus précis, moins de résultats)
 python3 i18n_hardcode_scanner.py --project ./mon-app --dry-run
 
 # Toutes les langues (exhaustif, détecte tout)
@@ -83,10 +121,10 @@ python3 i18n_hardcode_scanner.py --project ./mon-app --universal --dry-run
 ### Injection et traduction
 
 ```bash
-# Injecter les clés découvertes dans fr.json
+# Injecte les clés découvertes dans fr.json
 python3 i18n_hardcode_scanner.py --project ./mon-app --inject
 
-# Traduire vers les 20 locales via DeepSeek
+# Traduit vers les 20 locales via DeepSeek
 python3 i18n_hardcode_scanner.py --project ./mon-app --translate
 
 # Pipeline complet : injection + traduction
@@ -99,7 +137,7 @@ python3 i18n_hardcode_scanner.py --project ./mon-app --auto
 # Simulation (affiche les différences, n'écrit rien)
 python3 i18n_hardcode_scanner.py --project ./mon-app --patch-safe --dry-run
 
-# Appliquer (ajoute les imports, t(), remplace le texte JSX, vérifie la syntaxe)
+# Application (ajoute les imports, t(), remplace le texte JSX, vérifie la syntaxe)
 python3 i18n_hardcode_scanner.py --project ./mon-app --patch-safe
 ```
 
@@ -109,23 +147,23 @@ Seuls les nœuds de texte JSX (`>texte<`) sont automatiquement remplacés. Les t
 
 ## Comment ça fonctionne
 
-Le scanner n'utilise **pas** de dictionnaires spécifiques à une langue. Il recherche plutôt des **motifs techniques** qui distinguent le texte d'interface du code :
+Le scanner **n'utilise pas** de dictionnaires spécifiques à une langue. Au lieu de cela, il recherche des **motifs techniques** qui distinguent le texte d'interface du code :
 
 ### Ce qu'il détecte
 
 | Motif | Exemple | Détecte |
-|-------|---------|---------|
+|---------|---------|---------|
 | Caractères latins accentués | `é`, `ñ`, `ü` | Français, espagnol, allemand, vietnamien… |
 | Écritures non latines | 你好, Привет, العربية | CJK, cyrillique, arabe… |
-| Phrases multi-mots | `"Téléchargement du fichier..."` | Toute langue avec espaces |
+| Phrases multi-mots | `"Téléchargement du fichier..."` | Toute langue avec des espaces |
 | Ponctuation de phrase | `"Terminé !"`, `"Continuer ?"` | Se termine par `.`, `!`, `?`, `:` |
 | Mots en casse titre | `"Tableau de bord"`, `"Paramètres"` | Noms propres, titres de sections |
-| Émoji dans le texte | `"✅ Copié"` | Mélange émoji + texte |
+| Emoji dans le texte | `"✅ Copié"` | Mélange emoji + texte |
 
 ### Ce qu'il ignore
 
 | Motif | Exemple | Raison |
-|-------|---------|--------|
+|---------|---------|--------|
 | camelCase / snake_case | `activeUsers`, `error_count` | Identifiants JS |
 | Classes CSS / Tailwind | `py-3 px-4`, `text-gray-500` | Style, pas texte d'interface |
 | URLs et chemins de fichiers | `https://...`, `./components/` | Imports, ressources |
@@ -142,7 +180,7 @@ Ligne par ligne →
   ② Y a-t-il une chaîne entre guillemets ("..." ou '...') ? 
      → Est-ce un identifiant JS ? → Ignorer
      → Est-ce technique ? → Ignorer
-     → Est-ce lisible par l'humain ? → Marquer comme STRING
+     → Est-ce lisible par l'humain ? → Marquer comme CHAÎNE
 ```
 
 ---
@@ -152,13 +190,13 @@ Ligne par ligne →
 Le scanner génère automatiquement des clés en camelCase à partir du texte français/anglais :
 
 | Texte original | Clé générée |
-|---------------|-------------|
+|--------------|---------------|
 | `"Paiement annulé"` | `paiementAnnule` |
 | `"✅ Copié"` | `copie` |
 | `"Wallet non connecté"` | `walletNonConnecte` |
 | `"Hello world"` | `helloWorld` |
 
-Les **collisions** reçoivent un suffixe `_N` (`title_2`, `title_3`). Les clés doivent être révisées après génération.
+**Les collisions** reçoivent un suffixe `_N` (`title_2`, `title_3`). Les clés doivent être révisées après la génération.
 
 ---
 
@@ -176,44 +214,11 @@ Chaque correction automatique passe par ces vérifications :
 
 ## Contributions de la communauté recherchées
 
-Cet outil s'améliore avec davantage de motifs de détection linguistique. Voici quelques façons d'aider :
+Cet outil est **open source et piloté par la communauté**. Forkez-le, améliorez-le, partagez-le.
+Chaque contribution — qu'il s'agisse d'un nouveau motif linguistique, d'un adaptateur de framework ou d'une correction de bug — contribue à rendre le web plus accessible.
+
+Nous accueillons particulièrement les PR des développeurs parlant des langues actuellement sous-représentées dans les outils d'internationalisation.
 
 ### 1. Ajouter la détection pour votre langue
 
-Le mode `--universal` détecte toutes les écritures, mais des motifs spécifiques améliorent la précision. Ajoutez :
-
-- **Jeux de caractères accentués** — Vietnamien (ăâđêôơư), Polonais (łężźć), Roumain (ăâîșț), etc.
-- **Mots vides non latins** — Mots arabes, hindi, thaï, grecs courants qui sont du texte d'interface, pas du code
-- **Détection CJK** — Plages de caractères chinois/japonais/coréens (déjà inclus, mais un réglage par sous-langue aide)
-
-### 2. Adaptateurs de framework
-
-- Prise en charge de la syntaxe `react-i18next` / `i18next` (actuellement next-intl uniquement)
-- Détection des motifs `formatMessage()`, `intl.formatMessage()`, `$t()`
-- Ajout de la prise en charge Vue.js / Svelte / Angular
-
-### 3. Améliorations du nommage des clés
-
-- Meilleure inférence des espaces de noms à partir de la structure des répertoires
-- Suggestions de clés multilingues (pas seulement à partir du français)
-- Intégration avec les systèmes de gestion de traduction existants
-
-### 4. Intégrations CI/CD
-
-- Action GitHub pour exécuter l'analyse sur les PR
-- Échec du CI si un nouveau texte codé en dur est introduit
-- Commentaire automatique sur les PR avec les résultats d'analyse
-
-### 5. Plugins IDE
-
-- Extension VS Code pour surligner le texte codé en dur en ligne
-- Suggestion de correctif rapide pour encapsuler dans un appel `t()`
-- Explorateur de fichiers de locale
-
----
-
-## Construire pour votre projet
-
-Ce scanner a été construit pour le projet **[Subvox](https://github.com/Nansoouu/subvox)** — une plateforme de sous-titrage vidéo open source prenant en charge 150+ langues de sous-titres et 20 langues d'interface.
-
-Le scanner fonctionne avec TOUT projet Next.js utilisant next-intl. Pointez simplement `
+Le mode `--universal` détecte toutes les écritures, mais les motifs spécifiques
